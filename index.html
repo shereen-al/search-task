@@ -34,7 +34,13 @@
 <meta name="expires" content="never">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <base target="_self">
-<meta http-equiv="imagetoolbar" content="no"></head>
+<meta http-equiv="imagetoolbar" content="no">
+<style>
+    #searchResults .focused {
+        background-color: #ffc78f;
+    }
+</style>
+</head>
 <body>
 <header class="header-wrap">
 <a title="Horsham, in West Sussex" href="https://www.horshaminformation.com/horsham-directory/">
@@ -133,7 +139,6 @@
     <button type="button" class="search-button" style="display: block;" onclick="navigateToNextResult()" id="responsiveButton">Search</button>
     <div id="suggestions" class="suggestions-box"></div>
     <ul id="searchResults"><li>free</li><li>freshly</li></ul>
-    <div id="noResults" style="display: none;">No results found</div>
 
 </div>
 
@@ -897,7 +902,6 @@ Flax Farm
 <img alt="Linseed and Flax seed provider in Horsham, West Sussex" src="https://www.horshaminformation.com/horsham-directory/horsham/horsham-flax-farm-05.webp" loading="lazy" width="125px" height="125px">
 </div>
 </div>
-</td>
 <td data-label="details">
 <div class="details">
 Flax Farm is all about flaxseed. Local, organic and GM-free. We produce wonderful omega-3 rich, cold-pressed flaxseed oil, cold milled and whole flaxseed, as well as producing our own flax porridges, mueslis and Flaxjacks, which are delicious cakes, made with our freshly ground flaxseed.
@@ -2085,11 +2089,7 @@ We notify our customers before we are calling to clean your windows. This is via
 
 
 </table>
-<div class="no-results" id="noResults">
-    <div class="no-results-icon">🔍</div>
-    <h3>No businesses found</h3>
-    <p>Try adjusting your search terms or browse all categories</p>
-</div>
+<div id="noResults" style="display: none;">No results found</div>
 </div>
 <br>
 <p>To have your business appear in the Horsham directory, just email on this link: <nobr><a title="Directory for Horsham and all local areas - builders, homeopathy, building contractors in Sussex, dentists, handyman, plumbers, fence experts" href="mailto:horsham-directory&#064;HorshamInformation.com">Horsham directory</a></nobr></p>
@@ -2370,11 +2370,256 @@ Website creation, SEO and website management by <a title="Website hosting and ex
 
 <script src="side-menus.js" defer></script>
 <script src="superfish.js" defer></script>
-</div>
 <script>
+    let currentResultIndex = 0;
+let searchResults = [];
+let lastSearchTerm = '';
+let suggestionIndex = -1;
+
+document.addEventListener('DOMContentLoaded', function() {
+    setupEventListeners();
+    setupClickOutsideToHideSuggestions();
+});
+
+function setupEventListeners() {
+    const searchInput = document.getElementById('searchText');
+
+    searchInput.addEventListener('input', function() {
+        const inputVal = this.value.toLowerCase().trim();
+        if(inputVal === '') {
+            document.getElementById('noResults').style.display = 'none';
+            clearHighlights();
+            showAllRows();
+        }
+        showSuggestions(inputVal);
+    });
+
+    searchInput.addEventListener('keydown', function(e) {
+        const suggestionsBox = document.getElementById('searchResults');
+        const suggestions = suggestionsBox.querySelectorAll('div');
+
+        if (suggestions.length === 0 || suggestionsBox.style.display === 'none') return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            suggestionIndex = (suggestionIndex + 1) % suggestions.length;
+            updateSuggestionFocus(suggestions);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            suggestionIndex = (suggestionIndex - 1 + suggestions.length) % suggestions.length;
+            updateSuggestionFocus(suggestions);
+        } else if (e.key === 'Enter') {
+            if (suggestionIndex >= 0 && suggestionIndex < suggestions.length) {
+                e.preventDefault();
+                suggestions[suggestionIndex].click();
+                suggestionIndex = -1;
+            } else {
+                performSearch();
+                if (searchResults.length > 0) {
+                    navigateToNextResult();
+                }
+                document.getElementById('searchResults').style.display = 'none';
+            }
+        }
+    });
+}
+
+function showAllRows() {
+    const tableBody = document.getElementById('tableBody');
+    const rows = tableBody.querySelectorAll('tr');
+    rows.forEach(row => {
+        row.style.display = '';
+    });
+}
+
+function updateSuggestionFocus(suggestions) {
+    suggestions.forEach((s, i) => {
+        if (i === suggestionIndex) {
+            s.classList.add('focused');
+            s.scrollIntoView({ block: 'nearest' });
+        } else {
+            s.classList.remove('focused');
+        }
+    });
+}
+
+function showSuggestions(input) {
+    const suggestionsBox = document.getElementById('searchResults');
+    const tableBody = document.getElementById('tableBody');
+    suggestionsBox.innerHTML = '';
+    suggestionIndex = -1;
+
+    if (input === '') {
+        suggestionsBox.style.display = 'none';
+        return;
+    }
+
+    const rows = tableBody.querySelectorAll('tr');
+    const suggestions = new Set();
+
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(input)) {
+            text.split(/\s+/).forEach(word => {
+                if (word.includes(input)) {
+                    suggestions.add(word);
+                }
+            });
+        }
+    });
+
+    if (suggestions.size === 0) {
+        suggestionsBox.style.display = 'none';
+        return;
+    }
+
+    suggestionsBox.style.display = 'block';
+
+    suggestions.forEach(suggestion => {
+        const div = document.createElement('div');
+        div.textContent = suggestion;
+        div.addEventListener('click', () => {
+            document.getElementById('searchText').value = suggestion;
+            suggestionsBox.style.display = 'none';
+            performSearch();
+            if (searchResults.length > 0) {
+                navigateToNextResult();
+            }
+        });
+        suggestionsBox.appendChild(div);
+    });
+}
+
+function setupClickOutsideToHideSuggestions() {
+    document.addEventListener('click', function(e) {
+        const suggestionsBox = document.getElementById('searchResults');
+        const searchInput = document.getElementById('searchText');
+        
+        if (!suggestionsBox.contains(e.target) && e.target !== searchInput) {
+            suggestionsBox.style.display = 'none';
+        }
+    });
+}
+
+function performSearch() {
+    const searchTerm = document.getElementById('searchText').value.toLowerCase().trim();
+    const tableBody = document.getElementById('tableBody');
+    const noResults = document.getElementById('noResults');
+    const rows = tableBody.querySelectorAll('tr');
+
+    clearHighlights();
+    let visibleCount = 0;
+    searchResults = [];
+
+    rows.forEach((row, index) => {
+        // Skip header/footer rows if they exist
+        if(row.classList.contains('header-row') || row.classList.contains('footer-row')) {
+            return;
+        }
+        
+        const text = row.textContent.toLowerCase();
+        const isMatch = searchTerm === '' || text.includes(searchTerm);
+
+        if (isMatch) {
+            row.style.display = '';
+            searchResults.push({ element: row, index: index });
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    if (searchTerm !== lastSearchTerm) {
+        currentResultIndex = 0;
+        lastSearchTerm = searchTerm;
+    }
+
+    // Show/hide no results message
+    if (searchTerm !== '' && visibleCount === 0) {
+        noResults.style.display = 'block';
+    } else {
+        noResults.style.display = 'none';
+    }
+
+    if (searchTerm !== '') {
+        highlightSearchTerm(searchTerm);
+    }
+}
+
+function navigateToNextResult() {
+    const searchTerm = document.getElementById('searchText').value.toLowerCase().trim();
+    if (searchTerm === '' || searchResults.length === 0) return;
+
+    searchResults.forEach(result => {
+        result.element.classList.remove('current-result');
+    });
+
+    if (currentResultIndex >= searchResults.length) {
+        currentResultIndex = 0;
+    }
+
+    const currentResult = searchResults[currentResultIndex];
+    currentResult.element.classList.add('current-result');
+    currentResult.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    currentResultIndex = (currentResultIndex + 1) % searchResults.length;
+}
+
+function clearHighlights() {
+    const tableBody = document.getElementById('tableBody');
+    const highlights = tableBody.querySelectorAll('.highlight');
+    highlights.forEach(highlight => {
+        const parent = highlight.parentNode;
+        parent.replaceChild(document.createTextNode(highlight.textContent), highlight);
+        parent.normalize();
+    });
+
+    const currentResults = tableBody.querySelectorAll('.current-result');
+    currentResults.forEach(result => {
+        result.classList.remove('current-result');
+    });
+}
+
+function highlightSearchTerm(searchTerm) {
+    if (!searchTerm) return;
+
+    const tableBody = document.getElementById('tableBody');
+    const walker = document.createTreeWalker(tableBody, NodeFilter.SHOW_TEXT, null, false);
+
+    const textNodes = [];
+    let node;
+    while (node = walker.nextNode()) {
+        textNodes.push(node);
+    }
+
+    textNodes.forEach(textNode => {
+        const text = textNode.textContent;
+        const lowercaseText = text.toLowerCase();
+        const index = lowercaseText.indexOf(searchTerm);
+
+        if (index !== -1) {
+            const beforeText = text.substring(0, index);
+            const matchText = text.substring(index, index + searchTerm.length);
+            const afterText = text.substring(index + searchTerm.length);
+
+            const span = document.createElement('span');
+            span.className = 'highlight';
+            span.textContent = matchText;
+
+            const parent = textNode.parentNode;
+            parent.insertBefore(document.createTextNode(beforeText), textNode);
+            parent.insertBefore(span, textNode);
+            parent.insertBefore(document.createTextNode(afterText), textNode);
+            parent.removeChild(textNode);
+        }
+    });
+}
+</script>
+<!-- <script>
     let currentResultIndex = 0;
     let searchResults = [];
     let lastSearchTerm = '';
+    let suggestionIndex = -1;
 
     document.addEventListener('DOMContentLoaded', function () {
         setupEventListeners();
@@ -2389,12 +2634,41 @@ Website creation, SEO and website management by <a title="Website hosting and ex
             showSuggestions(inputVal);
         });
 
-        searchInput.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
+        searchInput.addEventListener('keydown', function (e) {
+            const suggestionsBox = document.getElementById('searchResults');
+            const suggestions = suggestionsBox.querySelectorAll('div');
+
+            if (suggestions.length === 0 || suggestionsBox.style.display === 'none') return;
+
+            if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                document.getElementById('suggestions').style.display = 'none';
-                performSearch();
-                navigateToNextResult();
+                suggestionIndex = (suggestionIndex + 1) % suggestions.length;
+                updateSuggestionFocus(suggestions);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                suggestionIndex = (suggestionIndex - 1 + suggestions.length) % suggestions.length;
+                updateSuggestionFocus(suggestions);
+            } else if (e.key === 'Enter') {
+                if (suggestionIndex >= 0 && suggestionIndex < suggestions.length) {
+                    e.preventDefault();
+                    suggestions[suggestionIndex].click();
+                    suggestionIndex = -1;
+                } else {
+                    performSearch();
+                    navigateToNextResult();
+                    document.getElementById('searchResults').style.display = 'none';
+                }
+            }
+        });
+    }
+
+    function updateSuggestionFocus(suggestions) {
+        suggestions.forEach((s, i) => {
+            if (i === suggestionIndex) {
+                s.classList.add('focused');
+                s.scrollIntoView({ block: 'nearest' });
+            } else {
+                s.classList.remove('focused');
             }
         });
     }
@@ -2403,6 +2677,7 @@ Website creation, SEO and website management by <a title="Website hosting and ex
         const suggestionsBox = document.getElementById('searchResults');
         const tableBody = document.getElementById('tableBody');
         suggestionsBox.innerHTML = '';
+        suggestionIndex = -1;
 
         if (input === '') {
             suggestionsBox.style.display = 'none';
@@ -2444,7 +2719,7 @@ Website creation, SEO and website management by <a title="Website hosting and ex
 
     function setupClickOutsideToHideSuggestions() {
         document.addEventListener('click', function (e) {
-            const suggestionsBox = document.getElementById('suggestions');
+            const suggestionsBox = document.getElementById('searchResults');
             if (!suggestionsBox.contains(e.target) && e.target.id !== 'searchText') {
                 suggestionsBox.style.display = 'none';
             }
@@ -2484,8 +2759,6 @@ Website creation, SEO and website management by <a title="Website hosting and ex
         if (searchTerm !== '') {
             highlightSearchTerm(searchTerm);
         }
-
-        // updateSearchInfo(visibleCount, searchTerm);
     }
 
     function navigateToNextResult() {
@@ -2556,6 +2829,7 @@ Website creation, SEO and website management by <a title="Website hosting and ex
             }
         });
     }
-</script>
+</script> -->
+
 </body>
 </html>
