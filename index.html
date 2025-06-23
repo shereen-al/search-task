@@ -2585,7 +2585,7 @@ Website creation, SEO and website management by <a title="Website hosting and ex
         });
     }
 </script> -->
-<script>
+<!-- <script>
     let currentResultIndex = 0;
 let searchResults = [];
 let lastSearchTerm = '';
@@ -2685,6 +2685,234 @@ function showSuggestions(input) {
             document.getElementById('searchText').value = suggestion;
             suggestionsBox.style.display = 'none';
             performSearch();
+        });
+        suggestionsBox.appendChild(div);
+    });
+}
+
+function setupClickOutsideToHideSuggestions() {
+    document.addEventListener('click', function (e) {
+        const suggestionsBox = document.getElementById('searchResults');
+        if (!suggestionsBox.contains(e.target) && e.target.id !== 'searchText') {
+            suggestionsBox.style.display = 'none';
+        }
+    });
+}
+
+function performSearch() {
+    const searchTerm = document.getElementById('searchText').value.toLowerCase().trim();
+    const tableBody = document.getElementById('tableBody');
+    const rows = tableBody.querySelectorAll('tr');
+
+    clearHighlights();
+    let visibleCount = 0;
+    searchResults = [];
+
+    rows.forEach((row, index) => {
+        const text = row.textContent.toLowerCase();
+        const isMatch = searchTerm === '' || text.includes(searchTerm);
+
+        if (isMatch) {
+            row.style.display = '';
+            searchResults.push({ element: row, index: index });
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    if (searchTerm !== lastSearchTerm) {
+        currentResultIndex = 0;
+        lastSearchTerm = searchTerm;
+    }
+
+    if (searchTerm !== '') {
+        highlightSearchTerm(searchTerm);
+    }
+}
+
+function navigateToNextResult() {
+    const searchTerm = document.getElementById('searchText').value.toLowerCase().trim();
+    if (searchTerm === '' || searchResults.length === 0) return;
+
+    searchResults.forEach(result => {
+        result.element.classList.remove('current-result');
+    });
+
+    if (currentResultIndex >= searchResults.length) {
+        currentResultIndex = 0;
+    }
+
+    const currentResult = searchResults[currentResultIndex];
+    currentResult.element.classList.add('current-result');
+    currentResult.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    currentResultIndex++;
+}
+
+function clearHighlights() {
+    const tableBody = document.getElementById('tableBody');
+    const highlights = tableBody.querySelectorAll('.highlight');
+    highlights.forEach(highlight => {
+        const parent = highlight.parentNode;
+        parent.replaceChild(document.createTextNode(highlight.textContent), highlight);
+        parent.normalize();
+    });
+
+    const currentResults = tableBody.querySelectorAll('.current-result');
+    currentResults.forEach(result => {
+        result.classList.remove('current-result');
+    });
+}
+
+function highlightSearchTerm(searchTerm) {
+    if (!searchTerm) return;
+
+    const tableBody = document.getElementById('tableBody');
+    const walker = document.createTreeWalker(tableBody, NodeFilter.SHOW_TEXT, null, false);
+
+    const textNodes = [];
+    let node;
+    while (node = walker.nextNode()) {
+        textNodes.push(node);
+    }
+
+    textNodes.forEach(textNode => {
+        const text = textNode.textContent;
+        const lowercaseText = text.toLowerCase();
+        const index = lowercaseText.indexOf(searchTerm);
+
+        if (index !== -1) {
+            const beforeText = text.substring(0, index);
+            const matchText = text.substring(index, index + searchTerm.length);
+            const afterText = text.substring(index + searchTerm.length);
+
+            const span = document.createElement('span');
+            span.className = 'highlight';
+            span.textContent = matchText;
+
+            const parent = textNode.parentNode;
+            parent.insertBefore(document.createTextNode(beforeText), textNode);
+            parent.insertBefore(span, textNode);
+            parent.insertBefore(document.createTextNode(afterText), textNode);
+            parent.removeChild(textNode);
+        }
+    });
+}
+</script> -->
+<script>
+    let currentResultIndex = 0;
+let searchResults = [];
+let lastSearchTerm = '';
+let suggestionIndex = -1;
+
+document.addEventListener('DOMContentLoaded', function () {
+    setupEventListeners();
+    setupClickOutsideToHideSuggestions();
+});
+
+function setupEventListeners() {
+    const searchInput = document.getElementById('searchText');
+    const searchButton = document.querySelector('.search-button');
+
+    searchInput.addEventListener('input', function () {
+        const inputVal = this.value.toLowerCase().trim();
+        showSuggestions(inputVal);
+    });
+
+    searchInput.addEventListener('keydown', function (e) {
+        const suggestionsBox = document.getElementById('searchResults');
+        const suggestions = suggestionsBox.querySelectorAll('div');
+
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (suggestionIndex >= 0 && suggestionIndex < suggestions.length) {
+                suggestions[suggestionIndex].click();
+                suggestionIndex = -1;
+            } else {
+                performSearch();
+                if (searchResults.length > 0) {
+                    navigateToNextResult();
+                }
+                suggestionsBox.style.display = 'none';
+            }
+        } else if (suggestions.length > 0 && suggestionsBox.style.display !== 'none') {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                suggestionIndex = (suggestionIndex + 1) % suggestions.length;
+                updateSuggestionFocus(suggestions);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                suggestionIndex = (suggestionIndex - 1 + suggestions.length) % suggestions.length;
+                updateSuggestionFocus(suggestions);
+            }
+        }
+    });
+
+    searchButton.addEventListener('click', function() {
+        performSearch();
+        if (searchResults.length > 0) {
+            navigateToNextResult();
+        }
+        document.getElementById('searchResults').style.display = 'none';
+    });
+}
+
+function updateSuggestionFocus(suggestions) {
+    suggestions.forEach((s, i) => {
+        if (i === suggestionIndex) {
+            s.classList.add('focused');
+            s.scrollIntoView({ block: 'nearest' });
+        } else {
+            s.classList.remove('focused');
+        }
+    });
+}
+
+function showSuggestions(input) {
+    const suggestionsBox = document.getElementById('searchResults');
+    const tableBody = document.getElementById('tableBody');
+    suggestionsBox.innerHTML = '';
+    suggestionIndex = -1;
+
+    if (input === '') {
+        suggestionsBox.style.display = 'none';
+        return;
+    }
+
+    const rows = tableBody.querySelectorAll('tr');
+    const suggestions = new Set();
+
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(input)) {
+            text.split(/\s+/).forEach(word => {
+                if (word.includes(input)) {
+                    suggestions.add(word);
+                }
+            });
+        }
+    });
+
+    if (suggestions.size === 0) {
+        const noResultsDiv = document.createElement('div');
+        noResultsDiv.textContent = 'No search results found';
+        noResultsDiv.className = 'no-results-message';
+        suggestionsBox.appendChild(noResultsDiv);
+    }
+
+    suggestionsBox.style.display = 'block';
+
+    suggestions.forEach(suggestion => {
+        const div = document.createElement('div');
+        div.textContent = suggestion;
+        div.addEventListener('click', () => {
+            document.getElementById('searchText').value = suggestion;
+            suggestionsBox.style.display = 'none';
+            performSearch();
+            if (searchResults.length > 0) {
+                navigateToNextResult();
+            }
         });
         suggestionsBox.appendChild(div);
     });
