@@ -128,12 +128,12 @@
 
     <form class="search-form" onsubmit="return false;">
     <img alt="Horsham Directory - directory for Horsham and all nearby areas - homeopathy, builders, handyman, plumbers" src="/_a_images-horsham/search-horsham-icon-01.webp" width="20" height="23">&nbsp;
-    <!-- <input type="text" autocomplete="on" placeholder="Search This Page" name="Search This Page" id="searchText"> -->
     <input type="text" autocomplete="on" placeholder="Search This Page" name="Search This Page" id="searchText">
-    <ul id="searchResults"></ul>
-    <!-- <input type="text" autocomplete="on" placeholder="Search This Page" name="Search This Page" id="searchText"> -->
     </form>
-    <button type="button" class="search-button" onclick="navigateToNextResult()" id="responsiveButton">Search</button>
+    <button type="button" class="search-button" style="display: block;" onclick="navigateToNextResult()" id="responsiveButton">Search</button>
+    <div id="suggestions" class="suggestions-box"></div>
+    <ul id="searchResults"><li>free</li><li>freshly</li></ul>
+    <div id="noResults" style="display: none;">No results found</div>
 
 </div>
 
@@ -2376,25 +2376,77 @@ Website creation, SEO and website management by <a title="Website hosting and ex
     let searchResults = [];
     let lastSearchTerm = '';
 
-    // Initialize the page
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         setupEventListeners();
-        updateSearchInfo();
+        setupClickOutsideToHideSuggestions();
     });
 
     function setupEventListeners() {
         const searchInput = document.getElementById('searchText');
-        
-        // Real-time search as you type
-        searchInput.addEventListener('input', function() {
-            performSearch();
+
+        searchInput.addEventListener('input', function () {
+            const inputVal = this.value.toLowerCase().trim();
+            showSuggestions(inputVal);
         });
-        
-        // Handle Enter key for navigation
-        searchInput.addEventListener('keypress', function(e) {
+
+        searchInput.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
+                document.getElementById('suggestions').style.display = 'none';
+                performSearch();
                 navigateToNextResult();
+            }
+        });
+    }
+
+    function showSuggestions(input) {
+        const suggestionsBox = document.getElementById('searchResults');
+        const tableBody = document.getElementById('tableBody');
+        suggestionsBox.innerHTML = '';
+
+        if (input === '') {
+            suggestionsBox.style.display = 'none';
+            return;
+        }
+
+        const rows = tableBody.querySelectorAll('tr');
+        const suggestions = new Set();
+
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            if (text.includes(input)) {
+                text.split(/\s+/).forEach(word => {
+                    if (word.includes(input)) {
+                        suggestions.add(word);
+                    }
+                });
+            }
+        });
+
+        if (suggestions.size === 0) {
+            suggestionsBox.style.display = 'none';
+            return;
+        }
+
+        suggestionsBox.style.display = 'block';
+
+        suggestions.forEach(suggestion => {
+            const div = document.createElement('div');
+            div.textContent = suggestion;
+            div.addEventListener('click', () => {
+                document.getElementById('searchText').value = suggestion;
+                suggestionsBox.style.display = 'none';
+                performSearch();
+            });
+            suggestionsBox.appendChild(div);
+        });
+    }
+
+    function setupClickOutsideToHideSuggestions() {
+        document.addEventListener('click', function (e) {
+            const suggestionsBox = document.getElementById('suggestions');
+            if (!suggestionsBox.contains(e.target) && e.target.id !== 'searchText') {
+                suggestionsBox.style.display = 'none';
             }
         });
     }
@@ -2404,17 +2456,15 @@ Website creation, SEO and website management by <a title="Website hosting and ex
         const tableBody = document.getElementById('tableBody');
         const noResults = document.getElementById('noResults');
         const rows = tableBody.querySelectorAll('tr');
-        
-        // Clear previous highlights and current result highlighting
+
         clearHighlights();
-        
         let visibleCount = 0;
         searchResults = [];
-        
+
         rows.forEach((row, index) => {
             const text = row.textContent.toLowerCase();
             const isMatch = searchTerm === '' || text.includes(searchTerm);
-            
+
             if (isMatch) {
                 row.style.display = '';
                 searchResults.push({ element: row, index: index });
@@ -2423,80 +2473,49 @@ Website creation, SEO and website management by <a title="Website hosting and ex
                 row.style.display = 'none';
             }
         });
-        
-        // Reset current result index if search term changed
+
         if (searchTerm !== lastSearchTerm) {
             currentResultIndex = 0;
             lastSearchTerm = searchTerm;
         }
-        
-        // Show/hide no results message
-        if (visibleCount === 0 && searchTerm !== '') {
-            noResults.style.display = 'block';
-        } else {
-            noResults.style.display = 'none';
-        }
-        
-        // Add highlighting for search terms
+
+        noResults.style.display = (visibleCount === 0 && searchTerm !== '') ? 'block' : 'none';
+
         if (searchTerm !== '') {
             highlightSearchTerm(searchTerm);
         }
-        
-        updateSearchInfo(visibleCount, searchTerm);
+
+        // updateSearchInfo(visibleCount, searchTerm);
     }
 
     function navigateToNextResult() {
         const searchTerm = document.getElementById('searchText').value.toLowerCase().trim();
-        
-        if (searchTerm === '' || searchResults.length === 0) {
-            return;
-        }
-        
-        // Clear previous current result highlighting
+        if (searchTerm === '' || searchResults.length === 0) return;
+
         searchResults.forEach(result => {
             result.element.classList.remove('current-result');
         });
-        
-        // Navigate to next result
+
         if (currentResultIndex >= searchResults.length) {
             currentResultIndex = 0;
         }
-        
-        // Highlight current result
+
         const currentResult = searchResults[currentResultIndex];
         currentResult.element.classList.add('current-result');
-        
-        // Scroll to the current result
-        currentResult.element.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-        });
-        
-        currentResultIndex++;
-        
-        // Update search info to show current position
-        updateSearchInfo(searchResults.length, searchTerm, currentResultIndex);
-    }
+        currentResult.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-    // function clearSearch() {
-    //     document.getElementById('searchText').value = '';
-    //     currentResultIndex = 0;
-    //     searchResults = [];
-    //     lastSearchTerm = '';
-    //     performSearch();
-    // }
+        currentResultIndex++;
+    }
 
     function clearHighlights() {
         const tableBody = document.getElementById('tableBody');
-        // Remove all highlight spans
         const highlights = tableBody.querySelectorAll('.highlight');
         highlights.forEach(highlight => {
             const parent = highlight.parentNode;
             parent.replaceChild(document.createTextNode(highlight.textContent), highlight);
             parent.normalize();
         });
-        
-        // Remove current result highlighting
+
         const currentResults = tableBody.querySelectorAll('.current-result');
         currentResults.forEach(result => {
             result.classList.remove('current-result');
@@ -2505,36 +2524,30 @@ Website creation, SEO and website management by <a title="Website hosting and ex
 
     function highlightSearchTerm(searchTerm) {
         if (!searchTerm) return;
-        
+
         const tableBody = document.getElementById('tableBody');
-        const walker = document.createTreeWalker(
-            tableBody,
-            NodeFilter.SHOW_TEXT,
-            null,
-            false
-        );
-        
+        const walker = document.createTreeWalker(tableBody, NodeFilter.SHOW_TEXT, null, false);
+
         const textNodes = [];
         let node;
-        
         while (node = walker.nextNode()) {
             textNodes.push(node);
         }
-        
+
         textNodes.forEach(textNode => {
             const text = textNode.textContent;
             const lowercaseText = text.toLowerCase();
             const index = lowercaseText.indexOf(searchTerm);
-            
+
             if (index !== -1) {
                 const beforeText = text.substring(0, index);
                 const matchText = text.substring(index, index + searchTerm.length);
                 const afterText = text.substring(index + searchTerm.length);
-                
+
                 const span = document.createElement('span');
                 span.className = 'highlight';
                 span.textContent = matchText;
-                
+
                 const parent = textNode.parentNode;
                 parent.insertBefore(document.createTextNode(beforeText), textNode);
                 parent.insertBefore(span, textNode);
@@ -2543,162 +2556,6 @@ Website creation, SEO and website management by <a title="Website hosting and ex
             }
         });
     }
-
-    function updateSearchInfo(visibleCount, searchTerm, currentPosition) {
-        const searchInfo = document.getElementById('searchInfo');
-        const totalBusinesses = document.getElementById('tableBody').querySelectorAll('tr').length;
-        
-        if (searchTerm === '' || !searchTerm) {
-            searchInfo.textContent = `Showing all ${totalBusinesses} businesses`;
-        } else if (currentPosition) {
-            searchInfo.textContent = `Result ${currentPosition} of ${visibleCount} matches found`;
-        } else {
-            searchInfo.textContent = `Found ${visibleCount} of ${totalBusinesses} businesses`;
-        }
-    }
 </script>
-<!-- <script>
-let currentIndex = -1;
-
-// Add submit event listener to the search form
-document.addEventListener('DOMContentLoaded', function() {
-    const searchForm = document.querySelector('.search-form');
-    searchForm.addEventListener('submit', function(event) {
-        event.preventDefault();
-        search();
-    });
-});
-
-const searchInput = document.getElementById('searchText');
-searchInput.addEventListener('keydown', function(event) {
-    if (event.key === 'Enter') {
-        event.preventDefault(); 
-        search();
-    }
-});
-
-// Function to perform search
-function search() {
-    const container = document.getElementById('text');
-    const searchText = searchInput.value.trim().toLowerCase();
-    if (searchText === "") return;
-
-    const textContent = container.textContent.toLowerCase();
-    const index = textContent.indexOf(searchText, currentIndex + 1);
-    if (index !== -1) {
-        const node = findTextNodeAtIndex(container, index);
-        if (node) {
-            scrollToTextNode(node);
-            currentIndex = index; 
-        }
-    } else {
-        currentIndex = -1; 
-    }
-}
-
-function findTextNodeAtIndex(element, index) {
-    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
-    let count = 0;
-    let node;
-    while (node = walker.nextNode()) {
-        const length = node.textContent.length;
-        if (index >= count && index < count + length) {
-            return node;
-        }
-        count += length;
-    }
-    return null;
-}
-
-function scrollToTextNode(node) {
-    const boundingRect = node.parentElement.getBoundingClientRect();
-    window.scrollTo({
-        top: boundingRect.top + window.pageYOffset - 100,
-        behavior: 'smooth'
-    });
-    removeHighlights(document.getElementById('text'));
-    highlightText(node);
-}
-
-function highlightText(node) {
-    const searchText = searchInput.value.trim();
-    const text = node.textContent;
-    const index = text.toLowerCase().indexOf(searchText.toLowerCase());
-    const before = node.splitText(index);
-    const after = before.splitText(searchText.length);
-    const span = document.createElement('span');
-    span.className = 'highlight';
-    span.appendChild(before.cloneNode(true));
-    before.parentNode.replaceChild(span, before);
-}
-function removeHighlights(container) {
-    const highlights = container.querySelectorAll('.highlight');
-    highlights.forEach(function(highlight) {
-        highlight.outerHTML = highlight.innerHTML;
-    });
-}
-
-
-const searchForm = document.getElementById('searchForm');
-const searchText = document.getElementById('searchText');
-const searchResults = document.getElementById('searchResults');
-const pageContent = document.body.textContent || document.documentElement.textContent;
-const words = [...new Set(pageContent.toLowerCase().split(/\W+/).filter(word => word.length >= 3))];
-function handleSearch(event) {
-  const query = event.target.value.toLowerCase();
-
-  if (query.length < 3) {
-    searchResults.innerHTML = '';
-    searchResults.style.display = 'none';
-    return;
-  }
-
-  const filteredWords = words.filter(word => word.startsWith(query));
-
-  searchResults.innerHTML = '';
-
-  if (filteredWords.length > 0) {
-    const listItems = filteredWords.map(word => {
-      const listItem = document.createElement('li');
-      listItem.textContent = word;
-      listItem.addEventListener('click', () => {
-        searchText.value = word;
-        document.getElementById('searchResults').innerHTML = '';
-        document.getElementById('searchResults').style.display = 'none';
-        const matchedElement = findElementByText(word); 
-        if (matchedElement) {
-          matchedElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-        currentIndex = -1;
-        search();
-      });
-      return listItem;
-    });
-
-    searchResults.append(...listItems);
-    searchResults.style.display = 'block'; 
-  } else {
-    searchResults.innerHTML = '<li>No suggestions found.</li>';
-    searchResults.style.display = 'block'; 
-  }
-}
-
-// Event listener for search input
-searchText.addEventListener('input', handleSearch);
-
-function findElementByText(text) {
-  const elements = document.querySelectorAll(':not(#searchResults)');
-  for (let i = 0; i < elements.length; i++) {
-    if (elements[i].innerText.includes(text)) {
-      return elements[i];
-    }
-  }
-  return null;
-}
-var responsiveButton = document.getElementById("responsiveButton");
-responsiveButton.addEventListener("click", function() {
-  search();
-});
-</script> -->
 </body>
 </html>
