@@ -1,0 +1,1 @@
+function locatorWin() {var lwin = window.open('/loc.htm','findit','height=192,width=285,toolbar=no,directories=no,status=no,menubar=no,scrollbars=no,resizable=no'); lwin.moveTo(364,5); lwin.focus();}
