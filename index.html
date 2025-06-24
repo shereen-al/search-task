@@ -36,20 +36,17 @@
 <base target="_self">
 <meta http-equiv="imagetoolbar" content="no">
 <style>
-    #searchResults .focused {
-        background-color: #ffc78f;
-    }
-    /* Search Widget Styles */
-.search-widget {
+/* Search Widget Styles */
+/* .search-widget {
     position: fixed;
     top: 20px;
     right: 20px;
     z-index: 1000;
     max-width: 400px;
     width: calc(100vw - 40px);
-}
+} */
 
-.search-container {
+/* .search-container {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px);
     border-radius: 16px;
@@ -66,9 +63,9 @@
     box-shadow: 
         0 32px 64px -12px rgba(0, 0, 0, 0.35),
         0 0 0 1px rgba(255, 255, 255, 0.1);
-}
+} */
 
-.search-input-wrapper {
+/* .search-input-wrapper {
     position: relative;
     display: flex;
     align-items: center;
@@ -82,22 +79,22 @@
     border-color: #3b82f6;
     background: rgba(255, 255, 255, 0.95);
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-}
+} */
 
-.search-icon {
+/* .search-icon {
     position: absolute;
     left: 12px;
     width: 20px;
     height: 20px;
     color: #6b7280;
     transition: color 0.3s ease;
-}
+} */
 
 .search-input-wrapper:focus-within .search-icon {
     color: #3b82f6;
 }
 
-#searchInput {
+/* #searchInput {
     width: 100%;
     padding: 12px 16px 12px 44px;
     border: none;
@@ -115,11 +112,12 @@
 
 #searchInput:focus::placeholder {
     color: #d1d5db;
-}
+} */
 
 .clear-btn {
     position: absolute;
     right: 8px;
+    top: 4px;
     width: 32px;
     height: 32px;
     border: none;
@@ -355,13 +353,10 @@
 
 </div> -->
 <!-- Search Widget -->
-<div class="search-widget" id="searchWidget">
+<div class="search-widget search sticky" id="searchWidget">
     <div class="search-container">
         <div class="search-input-wrapper search-form">
-            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <circle cx="11" cy="11" r="8"></circle>
-                <path d="21 21l-4.35-4.35"></path>
-            </svg>
+            <img alt="Horsham Directory - directory for Horsham and all nearby areas - homeopathy, builders, handyman, plumbers" src="/_a_images-horsham/search-horsham-icon-01.webp" width="20" height="23">&nbsp;
             <input 
                 type="text" 
                 id="searchInput" 
