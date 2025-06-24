@@ -1031,3 +1031,141 @@ li:hover ul.sub {
 				*/
 				
 }
+.clear-btn {
+    position: absolute;
+    right: 8px;
+    top: 4px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    opacity: 0;
+    animation: fadeIn 0.3s ease forwards;
+}
+
+.clear-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    transform: scale(1.05);
+}
+
+.clear-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.search-results {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    opacity: 0;
+    animation: slideUp 0.4s ease forwards;
+}
+
+.results-count {
+    font-size: 20px;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.navigation-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nav-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.nav-btn:hover:not(:disabled) {
+    background: rgba(59, 130, 246, 0.2);
+    transform: scale(1.05);
+}
+
+.nav-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.nav-btn svg {
+    width: 32px;
+    height: 32px;
+}
+
+.current-result {
+    font-size: 20px;
+    color: #6b7280;
+    font-weight: 500;
+    min-width: 40px;
+    text-align: center;
+}
+/* Search Highlight Styles */
+.search-highlight {
+    background: linear-gradient(120deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(251, 191, 36, 0.2);
+}
+
+.search-highlight.current {
+    background: linear-gradient(120deg, #f97316 0%, #ea580c 100%);
+    color: white;
+    box-shadow: 0 4px 8px rgba(249, 115, 22, 0.3);
+    transform: scale(1.05);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
